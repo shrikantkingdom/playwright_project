@@ -1,0 +1,125 @@
+name: Playwright Tests CI
+
+on:
+  push:
+    branches: ["main", "master", "develop"]
+  pull_request:
+    branches: ["main", "master", "develop"]
+
+jobs:
+  # ── API Tests ──────────────────────────────────────────────────────────────
+  api-tests:
+    name: API Tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run API tests (parallel)
+        env:
+          ENV: qa
+          API_BASE_URL: https://jsonplaceholder.typicode.com
+        run: |
+          pytest tests/api \
+            -m api \
+            -n auto \
+            --reruns 2 \
+            --reruns-delay 1 \
+            --html=reports/api-report.html \
+            --self-contained-html \
+            -v
+
+      - name: Upload API test report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: api-test-report
+          path: reports/api-report.html
+
+  # ── UI Tests ───────────────────────────────────────────────────────────────
+  ui-tests:
+    name: UI Tests (${{ matrix.browser }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install Playwright browsers
+        run: playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Run UI tests
+        env:
+          ENV: qa
+          BROWSER: ${{ matrix.browser }}
+          HEADLESS: "true"
+          SAUCE_USERNAME: standard_user
+          SAUCE_PASSWORD: secret_sauce
+        run: |
+          pytest tests/ui \
+            -m ui \
+            --reruns 2 \
+            --reruns-delay 2 \
+            --html=reports/ui-report-${{ matrix.browser }}.html \
+            --self-contained-html \
+            -v
+
+      - name: Upload UI test report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ui-test-report-${{ matrix.browser }}
+          path: |
+            reports/ui-report-${{ matrix.browser }}.html
+            reports/screenshots/
+            reports/videos/
+
+  # ── Lint & Format check ────────────────────────────────────────────────────
+  lint:
+    name: Lint & Format Check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install linting tools
+        run: pip install flake8 black
+
+      - name: Run flake8
+        run: flake8 . --max-line-length=88 --extend-ignore=E203,W503 --exclude=.git,__pycache__,.venv,reports
+
+      - name: Check black formatting
+        run: black --check --diff . --exclude '/(\.git|__pycache__|\.venv|reports)/'
