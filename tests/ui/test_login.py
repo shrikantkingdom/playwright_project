@@ -88,5 +88,6 @@ class TestLogout:
         inventory = InventoryPage(authenticated_page)
         inventory.logout()
         authenticated_page.wait_for_url("**/")
-        assert "saucedemo.com" in authenticated_page.url
+        # After logout the URL should be the SauceDemo root, not the inventory page
+        assert authenticated_page.url.startswith("https://www.saucedemo.com")
         assert "inventory.html" not in authenticated_page.url

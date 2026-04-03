@@ -11,6 +11,8 @@ jobs:
   api-tests:
     name: API Tests
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -49,6 +51,8 @@ jobs:
   ui-tests:
     name: UI Tests (${{ matrix.browser }})
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -99,6 +103,8 @@ jobs:
   lint:
     name: Lint & Format Check
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
