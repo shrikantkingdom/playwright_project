@@ -14,8 +14,27 @@ playwright_project/
 ├── config/                       # Configuration management
 │   ├── base_config.py            # BaseConfig dataclass + get_config() factory
 │   └── environments/             # Per-environment overrides (dev, qa, staging)
+│       ├── dev.py
+│       ├── qa.py
+│       └── staging.py
 ├── data/                         # Test data factories (Faker-powered)
 │   └── test_data.py
+├── docs/                         # Framework documentation
+│   ├── business-decisions.md     # Technology ADRs and ROI model
+│   ├── e2e-test-strategy.md      # Test strategy and coverage plan
+│   ├── playwright-pros-cons.md   # Playwright vs Selenium vs Cypress
+│   ├── selenium-to-playwright-migration.md
+│   ├── technical-architecture.md # Architecture diagrams and data flows
+│   └── sdet-manager-interview-qa.md
+├── features/                     # Gherkin BDD scenarios (living documentation)
+│   ├── api/
+│   │   ├── posts.feature
+│   │   ├── todos.feature
+│   │   └── users.feature
+│   └── ui/
+│       ├── cart.feature
+│       ├── login.feature
+│       └── navigation.feature
 ├── fixtures/                     # Shared pytest fixture modules
 ├── pages/                        # Page Object Model (POM) classes
 │   ├── base_page.py              # Base class with common helpers
@@ -23,20 +42,27 @@ playwright_project/
 │   ├── inventory_page.py         # Product listing page
 │   └── cart_page.py              # Cart & checkout pages
 ├── tests/
-│   ├── ui/                       # UI test suite (Playwright)
-│   │   ├── test_login.py         # Login / logout scenarios
-│   │   ├── test_navigation.py    # Product listing & sorting
-│   │   └── test_cart.py          # Cart & checkout flow
-│   └── api/                      # API test suite (httpx)
-│       ├── test_posts.py         # /posts CRUD + performance
-│       ├── test_users.py         # /users + schema validation
-│       └── test_todos.py         # /todos + filtering
+│   └── step_defs/                # pytest-bdd step definitions
+│       ├── conftest.py           # Shared BDD context fixture
+│       ├── ui/                   # UI step definitions (Playwright)
+│       │   ├── conftest.py       # Shared UI given steps
+│       │   ├── test_login_steps.py
+│       │   ├── test_navigation_steps.py
+│       │   └── test_cart_steps.py
+│       └── api/                  # API step definitions (httpx)
+│           ├── conftest.py       # Shared API assertion steps
+│           ├── test_posts_steps.py
+│           ├── test_users_steps.py
+│           └── test_todos_steps.py
 ├── utils/                        # Shared utilities
 │   ├── logger.py                 # Coloured logging setup
 │   ├── helpers.py                # Timestamps, dir creation, decorators
 │   └── schema_validator.py       # jsonschema wrapper + common schemas
 ├── reports/                      # Generated test reports (gitignored)
 ├── .env.example                  # Environment variable template
+├── .github/
+│   └── workflows/
+│       └── ci.yml                # GitHub Actions CI pipeline
 ├── .pre-commit-config.yaml       # Pre-commit hooks (black + flake8)
 ├── conftest.py                   # Root-level pytest fixtures
 ├── Dockerfile                    # Containerised test runner
@@ -51,7 +77,7 @@ playwright_project/
 
 ### 1. Prerequisites
 
-- Python 3.11+
+- Python 3.10+
 - pip or a virtual environment manager
 
 ### 2. Clone & set up a virtual environment
@@ -95,13 +121,13 @@ pytest
 ### Run only UI tests
 
 ```bash
-pytest tests/ui -m ui
+pytest tests/step_defs/ui -m ui
 ```
 
 ### Run only API tests
 
 ```bash
-pytest tests/api -m api
+pytest tests/step_defs/api -m api
 ```
 
 ### Run smoke tests
@@ -129,9 +155,9 @@ pytest -m performance
 Run UI tests on a specific browser:
 
 ```bash
-BROWSER=chromium pytest tests/ui -m ui
-BROWSER=firefox  pytest tests/ui -m ui
-BROWSER=webkit   pytest tests/ui -m ui
+BROWSER=chromium pytest tests/step_defs/ui -m ui
+BROWSER=firefox  pytest tests/step_defs/ui -m ui
+BROWSER=webkit   pytest tests/step_defs/ui -m ui
 ```
 
 ---
@@ -142,10 +168,10 @@ Use **pytest-xdist** to run tests in parallel:
 
 ```bash
 # Auto-detect workers (one per CPU core)
-pytest tests/api -n auto
+pytest tests/step_defs/api -n auto
 
 # Fixed number of workers
-pytest tests/api -n 4
+pytest tests/step_defs/api -n 4
 ```
 
 ---
@@ -173,13 +199,39 @@ open reports/report.html           # macOS
 xdg-open reports/report.html      # Linux
 ```
 
-### Allure Report (optional)
+### Allure Report — API tests
 
 ```bash
-pip install allure-pytest
-pytest --alluredir=allure-results
-allure serve allure-results
+# Run API tests and collect Allure results
+pytest tests/step_defs/api -m api --alluredir=allure-results/api
+
+# Open interactive Allure report in browser
+allure serve allure-results/api
 ```
+
+### Allure Report — UI tests
+
+```bash
+# Run UI tests and collect Allure results
+pytest tests/step_defs/ui -m ui --alluredir=allure-results/ui
+
+# Open interactive Allure report in browser
+allure serve allure-results/ui
+```
+
+### Why step_defs paths, not feature paths?
+
+When using **pytest-bdd**, you always run the **step definition files** — not the `.feature` files directly.
+The feature files are plain Gherkin documentation; they do not contain executable code.
+Each step definition module links to its feature file via the `scenarios()` decorator:
+
+```python
+# in test_navigation_steps.py
+from pytest_bdd import scenarios
+scenarios("features/ui/navigation.feature")   # links at collection time
+```
+
+So `pytest tests/step_defs/ui -m ui` is the correct and idiomatic command.
 
 ---
 
@@ -250,7 +302,7 @@ docker build -t playwright-tests .
 docker run --rm playwright-tests
 
 # Run only API tests
-docker run --rm playwright-tests pytest tests/api -m api -v
+docker run --rm playwright-tests pytest tests/step_defs/api -m api -v
 ```
 
 ---

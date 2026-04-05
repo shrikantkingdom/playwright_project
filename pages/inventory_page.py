@@ -22,7 +22,7 @@ class InventoryPage(BasePage):
     ADD_TO_CART_BUTTON = "[data-test^='add-to-cart']"
     CART_BADGE = ".shopping_cart_badge"
     CART_ICON = ".shopping_cart_link"
-    SORT_DROPDOWN = "[data-test='product_sort_container']"
+    SORT_DROPDOWN = "[data-test='product-sort-container']"
     BURGER_MENU = "#react-burger-menu-btn"
     LOGOUT_LINK = "#logout_sidebar_link"
     PAGE_TITLE = ".title"

@@ -1,3 +1,17 @@
+# Test reports and artefacts
+reports/
+allure-results/
+allure-report/
+.allure/
+
+# Virtual environments
+.venv/
+.venv-1/
+
+# macOS metadata
+.DS_Store
+**/.DS_Store
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

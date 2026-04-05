@@ -27,4 +27,4 @@ COPY . .
 RUN mkdir -p reports/screenshots reports/videos reports/traces
 
 # Default command: run all tests
-CMD ["pytest", "tests/", "-v", "--html=reports/report.html", "--self-contained-html"]
+CMD ["pytest", "tests/step_defs/", "-v", "--html=reports/report.html", "--self-contained-html"]

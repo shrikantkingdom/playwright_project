@@ -22,4 +22,5 @@ def given_logged_in(page, config, username, password):
     login_page.open(config.ui_base_url)
     login_page.login(username, password)
     page.wait_for_url("**/inventory.html")
+    page.wait_for_load_state("domcontentloaded")
     return InventoryPage(page)
